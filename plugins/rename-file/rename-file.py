@@ -63,18 +63,24 @@ class RenamePlugin(GObject.Object, Xviewer.WindowActivatable):
             dialogWindow = Gtk.MessageDialog(window, Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.QUESTION, Gtk.ButtonsType.OK_CANCEL, message)
 
             dialogWindow.set_title('Rename file')
+            dialogWindow.set_default_response(Gtk.ResponseType.OK)
 
             dialogBox = dialogWindow.get_content_area()
             userEntry = Gtk.Entry()
             userEntry.set_visibility(True)
             userEntry.set_size_request(250,0)
+            userEntry.set_activates_default(True)
             userEntry.set_text(name)
             dialogBox.pack_end(userEntry, False, False, 0)
 
             dialogWindow.show_all()
+            len_without_ext = len(os.path.splitext(name)[0])
+            userEntry.select_region(0, len_without_ext)
+
             response = dialogWindow.run()
             text = userEntry.get_text()
             dialogWindow.destroy()
+
             if (response == Gtk.ResponseType.OK) and (text != ''):
                 return text
             else:
@@ -86,18 +92,20 @@ class RenamePlugin(GObject.Object, Xviewer.WindowActivatable):
         if not image:
             print('No image can be renamed')
             return
+        
         src = image.get_file().get_path()
+        if not os.path.isfile(src):
+            print('Cannot find file: %s' % (src))
+            return
+        
         name = os.path.basename(src)
-
         new_name = get_new_name('Enter the new name', name)
         if new_name is None:
             return
 
-        folder = os.path.dirname(src)
-        dest = os.path.join(folder, new_name)
+        dest = os.path.join(os.path.dirname(src), new_name)
         try:
             os.rename(src, dest)
-        except OSError:
-            pass
-        print('Renamed %s into %s' % (name, new_name))
-
+            print('Renamed %s into %s' % (name, new_name))
+        except Exception as e:
+            print(e)
